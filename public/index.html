@@ -426,7 +426,7 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
         </div>
         <div class="form-group">
           <div class="form-label">連結名稱</div>
-          <input class="form-input" id="vless-link-name" value="RelayBox">
+          <input class="form-input" id="vless-link-name" value="kuoboX">
         </div>
       </div>
       <div class="input-group" style="margin-bottom:8px">
@@ -767,7 +767,7 @@ function buildPortLink(btn) {
   const port = +card.querySelector('.port-num').value;
   const uuid = card.querySelector('.pc-uuid').value;
   const shortid = card.querySelector('.pc-shortid').value;
-  const baseName = document.getElementById('vless-link-name').value || 'RelayBox';
+  const baseName = document.getElementById('vless-link-name').value || 'kuoboX';
 
   if (!port) { toast('請先填入端口號', 'err'); return; }
 
@@ -1050,7 +1050,7 @@ async function detectIP() {
 
 function buildVlessLink() {
   const serverIP = document.getElementById('vless-server-ip').value.trim();
-  const baseName = document.getElementById('vless-link-name').value || 'RelayBox';
+  const baseName = document.getElementById('vless-link-name').value || 'kuoboX';
   const pubkey = document.getElementById('cfg-pubkey').value;
   const sni = document.getElementById('cfg-sni').value || 'www.microsoft.com';
   const proto = document.getElementById('cfg-in-proto').value;

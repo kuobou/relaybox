@@ -1,5 +1,5 @@
 {
-  "name": "relay-panel",
+  "name": "kuobox",
   "version": "1.0.0",
   "description": "sing-box 中轉管理面板",
   "main": "server.js",

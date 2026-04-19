@@ -15,7 +15,7 @@ info() { echo -e "${BLUE}[~]${NC} $1"; }
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "        RelayBox 管理面板 一鍵安裝"
+echo "        kuoboX 管理面板 一鍵安裝"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
@@ -38,7 +38,7 @@ PANEL_PASSWORD=${PANEL_PASSWORD:-changeme123}
 
 echo ""
 
-INSTALL_DIR="/opt/relaybox"
+INSTALL_DIR="/opt/kuobox"
 NODE_VER="20.19.2"
 NODE_BIN="/usr/local/bin/node"
 NPM_BIN="/usr/local/bin/npm"
@@ -56,13 +56,13 @@ ln -sf "$NODE_BIN" /usr/bin/node 2>/dev/null || true
 ln -sf "$NPM_BIN" /usr/bin/npm 2>/dev/null || true
 log "Node.js 安裝完成 ($($NODE_BIN --version))"
 
-# ── 下載 RelayBox ────────────────────────────
-info "下載 RelayBox 到 $INSTALL_DIR ..."
-curl -fsSL https://github.com/kuobou/relaybox/archive/refs/heads/main.zip -o /tmp/relaybox.zip
-unzip -q -o /tmp/relaybox.zip -d /tmp/
+# ── 下載 kuoboX ────────────────────────────
+info "下載 kuoboX 到 $INSTALL_DIR ..."
+curl -fsSL https://github.com/kuobou/kuobox/archive/refs/heads/main.zip -o /tmp/kuobox.zip
+unzip -q -o /tmp/kuobox.zip -d /tmp/
 mkdir -p "$INSTALL_DIR"
-cp -rf /tmp/relaybox-main/. "$INSTALL_DIR/"
-rm -rf /tmp/relaybox.zip /tmp/relaybox-main
+cp -rf /tmp/kuobox-main/. "$INSTALL_DIR/"
+rm -rf /tmp/kuobox.zip /tmp/kuobox-main
 cd "$INSTALL_DIR"
 log "下載完成"
 
@@ -115,9 +115,9 @@ log ".env 設定完成"
 
 # ── 建立 systemd 服務 ────────────────────────
 info "建立 systemd 服務..."
-cat > /etc/systemd/system/relaybox.service <<EOF
+cat > /etc/systemd/system/kuobox.service <<EOF
 [Unit]
-Description=RelayBox 管理面板
+Description=kuoboX 管理面板
 After=network.target
 
 [Service]
@@ -135,8 +135,8 @@ WantedBy=multi-user.target
 EOF
 
 systemctl daemon-reload
-systemctl enable relaybox
-systemctl restart relaybox
+systemctl enable kuobox
+systemctl restart kuobox
 log "服務啟動完成"
 
 # ── 取得本機 IP ──────────────────────────────
@@ -153,8 +153,8 @@ echo "  面板網址（公網）：http://${PUBLIC_IP}:${PANEL_PORT}"
 echo "  登入密碼：${PANEL_PASSWORD}"
 echo ""
 echo "  常用指令："
-echo "    重啟面板：systemctl restart relaybox"
-echo "    查看日誌：journalctl -u relaybox -f"
-echo "    停止面板：systemctl stop relaybox"
+echo "    重啟面板：systemctl restart kuobox"
+echo "    查看日誌：journalctl -u kuobox -f"
+echo "    停止面板：systemctl stop kuobox"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
