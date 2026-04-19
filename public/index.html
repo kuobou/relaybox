@@ -368,7 +368,7 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
       <!-- 落地機設定 -->
       <div id="block-exit" style="display:none">
         <div class="section-title">入站設定（接收中轉機連線）</div>
-        <div class="form-grid">
+        <div class="form-grid" style="margin-bottom:10px">
           <div class="form-group">
             <div class="form-label">協議</div>
             <select class="form-select" id="cfg-exit-proto">
@@ -377,38 +377,24 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
               <option value="shadowsocks">Shadowsocks</option>
             </select>
           </div>
-          <div class="form-group">
-            <div class="form-label">監聽端口</div>
-            <input class="form-input" id="cfg-exit-listen-port" placeholder="例如 8443" type="number">
+          <div class="form-group" style="align-self:flex-end">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding-bottom:2px">
+              <input type="checkbox" id="cfg-exit-tls"> 入站啟用 TLS（需要 /etc/ssl/cert.pem）
+            </label>
           </div>
         </div>
-        <div class="form-group" style="margin-bottom:12px">
-          <div class="form-label">UUID（已自動生成，複製給中轉機使用）</div>
-          <div class="input-group">
-            <input class="form-input" id="cfg-exit-gen-uuid">
-            <button class="btn sm" onclick="genExitUUID()">重新生成</button>
-          </div>
-        </div>
-        <div class="form-group" style="margin-top:8px">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-            <input type="checkbox" id="cfg-exit-tls"> 入站啟用 TLS（需要 /etc/ssl/cert.pem 憑證）
-          </label>
-        </div>
-        <div class="notice" style="margin-top:8px">把上面的 UUID 填到中轉機的「落地機 UUID」欄位。</div>
+        <div class="form-label" style="margin-bottom:6px">監聽端口（每個端口獨立 UUID，複製給對應中轉機端口）</div>
+        <div class="port-list" id="exit-port-list"></div>
+        <button class="btn sm" onclick="addExitPort()" style="margin-bottom:14px">＋ 新增端口</button>
         <hr class="divider">
-        <div class="section-title">匯出連結（給中轉機參考）</div>
-        <div class="form-group" style="margin-bottom:8px">
-          <div class="form-label">這台機器的公網 IP</div>
+        <div class="section-title">這台機器的公網 IP</div>
+        <div class="form-group" style="margin-bottom:0">
           <div class="input-group">
             <input class="form-input" id="exit-server-ip" placeholder="自動偵測或手動輸入">
             <button class="btn sm" onclick="detectExitIP()">偵測</button>
           </div>
         </div>
-        <div class="input-group" style="margin-bottom:4px">
-          <input class="form-input" id="exit-vless-link" readonly placeholder="填入 IP 後點擊生成" style="font-size:11px">
-          <button class="btn sm primary" onclick="buildExitLink()">生成連結</button>
-          <button class="btn sm" onclick="copyText(document.getElementById('exit-vless-link').value)">複製</button>
-        </div>
+        <div class="notice" style="margin-top:10px">每個端口展開後可獨立生成給中轉機填入的連結。</div>
       </div>
 
       <hr class="divider">
@@ -503,7 +489,7 @@ function copyText(text, msg) {
   toast(msg);
 }
 
-function initDefaults() { addPort(); genExitUUID(); }
+function initDefaults() { addPort(); addExitPort(); }
 
 function switchRole(role) {
   currentRole = role;
@@ -514,6 +500,7 @@ function switchRole(role) {
   document.getElementById('vless-link-block').style.display = role === 'relay' ? 'block' : 'none';
   document.getElementById('cfg-output').value = '';
   if (role === 'exit' && !document.getElementById('exit-server-ip').value) detectExitIP();
+  if (role === 'exit' && !document.getElementById('exit-port-list').children.length) addExitPort();
 }
 
 async function doLogin() {
@@ -660,7 +647,6 @@ function genShortIDVal() {
   const h='0123456789abcdef';
   return Array.from({length:8},()=>h[Math.floor(Math.random()*16)]).join('');
 }
-function genExitUUID() { document.getElementById('cfg-exit-gen-uuid').value = makeUUID(); }
 
 function makePortCard(portNum) {
   const uuid = makeUUID();
@@ -791,6 +777,87 @@ function copyPortLink(btn) {
   copyText(val, '已複製連結');
 }
 
+// ── 落地機多端口 ──────────────────────────────
+function makeExitPortCard(portNum) {
+  const uuid = makeUUID();
+  const div = document.createElement('div');
+  div.className = 'port-card';
+  div.innerHTML = `
+    <div class="port-card-head">
+      <input class="form-input ep-num" type="number" placeholder="例如 8443" value="${portNum||''}" style="width:110px;flex-shrink:0">
+      <span class="ep-uuid-hint" style="font-size:11px;color:var(--muted);flex:1;padding:0 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">UUID: ${uuid.slice(0,8)}...</span>
+      <button class="btn sm" onclick="togglePortCard(this)" style="flex-shrink:0">設定 ▾</button>
+      <button class="btn sm danger" onclick="this.closest('.port-card').remove()" style="flex-shrink:0">✕</button>
+    </div>
+    <div class="port-card-body" style="display:none">
+      <div class="form-group" style="margin-top:10px">
+        <div class="form-label">UUID（複製給中轉機的「落地機 UUID」欄位）</div>
+        <div class="input-group">
+          <input class="form-input ep-uuid" value="${uuid}">
+          <button class="btn sm" onclick="regenExitPortUUID(this)">重新生成</button>
+          <button class="btn sm" onclick="copyText(this.closest('.port-card').querySelector('.ep-uuid').value,'已複製 UUID')">複製</button>
+        </div>
+      </div>
+      <div class="port-card-sub">匯出連結（給中轉機貼入落地機設定）</div>
+      <div class="input-group">
+        <input class="form-input ep-link" readonly placeholder="填入公網 IP 後點生成" style="font-size:11px">
+        <button class="btn sm primary" onclick="buildExitPortLink(this)">生成連結</button>
+        <button class="btn sm" onclick="copyExitPortLink(this)">複製</button>
+      </div>
+    </div>
+  `;
+  div.querySelector('.ep-uuid').addEventListener('input', function() {
+    div.querySelector('.ep-uuid-hint').textContent = 'UUID: ' + (this.value.slice(0,8)||'--') + '...';
+  });
+  return div;
+}
+
+function regenExitPortUUID(btn) {
+  const card = btn.closest('.port-card');
+  const uuid = makeUUID();
+  card.querySelector('.ep-uuid').value = uuid;
+  card.querySelector('.ep-uuid-hint').textContent = 'UUID: ' + uuid.slice(0,8) + '...';
+}
+
+function addExitPort(portNum) {
+  document.getElementById('exit-port-list').appendChild(makeExitPortCard(portNum));
+}
+
+function getExitPortsData() {
+  return Array.from(document.querySelectorAll('#exit-port-list .port-card')).map(card => ({
+    port: +card.querySelector('.ep-num').value,
+    uuid: card.querySelector('.ep-uuid').value || makeUUID(),
+  })).filter(d => d.port >= 1 && d.port <= 65535);
+}
+
+function buildExitPortLink(btn) {
+  const card = btn.closest('.port-card');
+  const ip = document.getElementById('exit-server-ip').value.trim();
+  if (!ip) { toast('請先填入或偵測公網 IP', 'err'); return; }
+  const port = +card.querySelector('.ep-num').value;
+  if (!port) { toast('請先填入端口號', 'err'); return; }
+  const uuid = card.querySelector('.ep-uuid').value;
+  const proto = document.getElementById('cfg-exit-proto').value;
+  const name = encodeURIComponent('ExitNode-' + port);
+  let link = '';
+  if (proto === 'vless') {
+    link = `vless://${uuid}@${ip}:${port}?type=tcp&security=none&encryption=none#${name}`;
+  } else if (proto === 'trojan') {
+    link = `trojan://${uuid}@${ip}:${port}?type=tcp#${name}`;
+  } else {
+    toast('Shadowsocks 請手動設定中轉機出站', 'err'); return;
+  }
+  card.querySelector('.ep-link').value = link;
+  toast('連結已生成');
+}
+
+function copyExitPortLink(btn) {
+  const card = btn.closest('.port-card');
+  const val = card.querySelector('.ep-link').value;
+  if (!val) { buildExitPortLink(card.querySelector('.btn.primary')); return; }
+  copyText(val, '已複製連結');
+}
+
 function getPortsData() {
   return Array.from(document.querySelectorAll('#port-list .port-card')).map(card => ({
     port: +card.querySelector('.port-num').value,
@@ -822,26 +889,6 @@ async function detectExitIP() {
   else toast('偵測失敗，請手動輸入', 'err');
 }
 
-function buildExitLink() {
-  const ip = document.getElementById('exit-server-ip').value.trim();
-  const port = document.getElementById('cfg-exit-listen-port').value;
-  const uuid = document.getElementById('cfg-exit-gen-uuid').value;
-  const proto = document.getElementById('cfg-exit-proto').value;
-  if (!ip) { toast('請填入公網 IP', 'err'); return; }
-  if (!port) { toast('請填入監聽端口', 'err'); return; }
-  if (!uuid) { toast('請先生成 UUID', 'err'); return; }
-  const name = encodeURIComponent('ExitNode');
-  let link = '';
-  if (proto === 'vless') {
-    link = `vless://${uuid}@${ip}:${port}?type=tcp&security=none&encryption=none#${name}`;
-  } else if (proto === 'trojan') {
-    link = `trojan://${uuid}@${ip}:${port}?type=tcp#${name}`;
-  } else {
-    toast('Shadowsocks 請手動設定', 'err'); return;
-  }
-  document.getElementById('exit-vless-link').value = link;
-  toast('連結已生成');
-}
 
 async function generateConfig() {
   let cfg = {};
@@ -903,27 +950,21 @@ async function generateConfig() {
     };
 
   } else {
-    const proto    = document.getElementById('cfg-exit-proto').value;
-    const port     = +document.getElementById('cfg-exit-listen-port').value;
-    const uuid     = document.getElementById('cfg-exit-gen-uuid').value || makeUUID();
-    if (!port || port < 1 || port > 65535) { toast('請填入有效的監聽端口', 'err'); return false; }
+    const proto = document.getElementById('cfg-exit-proto').value;
+    const useTLS = document.getElementById('cfg-exit-tls').checked;
+    const tlsCfg = useTLS ? {tls:{enabled:true,certificate_path:'/etc/ssl/cert.pem',key_path:'/etc/ssl/key.pem'}} : {};
+    const exitPorts = getExitPortsData();
+    if (!exitPorts.length) { toast('請填入至少一個有效的監聽端口', 'err'); return false; }
 
-    const exitUseTLS = document.getElementById('cfg-exit-tls').checked;
-    const exitTlsCfg = exitUseTLS ? {tls:{enabled:true,certificate_path:'/etc/ssl/cert.pem',key_path:'/etc/ssl/key.pem'}} : {};
-    const inbound = proto === 'vless' ? {
-      type:'vless', listen:'0.0.0.0', listen_port:port,
-      users:[{uuid}], ...exitTlsCfg
-    } : proto === 'trojan' ? {
-      type:'trojan', listen:'0.0.0.0', listen_port:port,
-      users:[{password:uuid}], ...exitTlsCfg
-    } : {
-      type:'shadowsocks', listen:'0.0.0.0', listen_port:port,
-      method:'aes-256-gcm', password:uuid
+    const makeExitInbound = (d) => {
+      if (proto === 'vless') return {type:'vless', listen:'0.0.0.0', listen_port:d.port, users:[{uuid:d.uuid}], ...tlsCfg};
+      if (proto === 'trojan') return {type:'trojan', listen:'0.0.0.0', listen_port:d.port, users:[{password:d.uuid}], ...tlsCfg};
+      return {type:'shadowsocks', listen:'0.0.0.0', listen_port:d.port, method:'aes-256-gcm', password:d.uuid};
     };
 
     cfg = {
       log:{level:'warn',output:'/var/log/sing-box.log'},
-      inbounds:[inbound],
+      inbounds: exitPorts.map(makeExitInbound),
       outbounds:[{type:'direct',tag:'direct'}],
       route:{final:'direct',auto_detect_interface:true}
     };
