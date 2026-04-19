@@ -31,8 +31,9 @@ curl -fsSL https://raw.githubusercontent.com/kuobou/relaybox/main/install.sh -o 
 安裝腳本會自動完成：
 - 安裝 Node.js 20（預編譯二進位，amd64 / arm64）
 - 安裝 sing-box（從 GitHub 下載最新版）
-- 安裝 vnstat（流量統計）
 - 建立 systemd 服務，開機自啟
+
+> 流量統計使用 `/proc/net/dev`，無需額外套件，相容所有發行版。
 
 安裝完成後開啟 `http://你的IP:3000`，使用設定的密碼登入。
 
