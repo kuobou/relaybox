@@ -140,8 +140,8 @@ systemctl restart kuobox
 log "服務啟動完成"
 
 # ── 取得本機 IP ──────────────────────────────
-LOCAL_IP=$(hostname -I | awk '{print $1}')
-PUBLIC_IP=$(curl -s --max-time 5 ifconfig.me 2>/dev/null || echo "無法取得")
+LOCAL_IP=$(hostname -I | tr ' ' '\n' | grep -E '^[0-9]+\.' | head -1)
+PUBLIC_IP=$(curl -4 -s --max-time 5 ifconfig.me 2>/dev/null || curl -s --max-time 5 ifconfig.me 2>/dev/null || echo "無法取得")
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
