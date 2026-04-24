@@ -1,4 +1,5 @@
 const express = require('express');
+const https = require('https');
 const { exec } = require('child_process');
 const { promisify } = require('util');
 const crypto = require('crypto');
@@ -256,6 +257,21 @@ app.post('/api/saveenv', authMiddleware, (req, res) => {
 // ── 前端路由 fallback ─────────────────────────────────
 app.get('*', (_, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
-app.listen(CONFIG.port, () => {
-  console.log(`✓ 中轉管理面板 啟動於 http://0.0.0.0:${CONFIG.port}`);
-});
+// ── 啟動 HTTPS ────────────────────────────────────────
+const certDir = path.join(__dirname, 'cert');
+const certFile = path.join(certDir, 'cert.pem');
+const keyFile = path.join(certDir, 'key.pem');
+
+if (fs.existsSync(certFile) && fs.existsSync(keyFile)) {
+  const httpsOptions = {
+    key: fs.readFileSync(keyFile),
+    cert: fs.readFileSync(certFile),
+  };
+  https.createServer(httpsOptions, app).listen(CONFIG.port, () => {
+    console.log(`✓ 中轉管理面板 啟動於 https://0.0.0.0:${CONFIG.port}`);
+  });
+} else {
+  app.listen(CONFIG.port, () => {
+    console.log(`✓ 中轉管理面板 啟動於 http://0.0.0.0:${CONFIG.port} （無憑證，降級 HTTP）`);
+  });
+}
