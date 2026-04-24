@@ -945,14 +945,14 @@ async function detectExitIP(silent) {
 
 async function loadConfigIntoForm() {
   const d = await api('GET', '/api/config');
-  if (!d || d.error || !d.config) return;
+  if (!d || d.error || !d.config) { toast('無法讀取設定：' + (d?.error || '未知錯誤'), 'err'); return; }
   let cfg;
-  try { cfg = JSON.parse(d.config); } catch { return; }
+  try { cfg = JSON.parse(d.config); } catch(e) { toast('設定 JSON 解析失敗：' + e.message, 'err'); return; }
 
   const inbounds = cfg.inbounds || [];
   const outbounds = cfg.outbounds || [];
   const rules = cfg.route?.rules || [];
-  if (!inbounds.length) return;
+  if (!inbounds.length) { toast('設定中沒有 inbounds，無法載入', 'err'); return; }
 
   const nonDirect = outbounds.filter(o => o.type !== 'direct');
   const role = nonDirect.length > 0 ? 'relay' : 'exit';
