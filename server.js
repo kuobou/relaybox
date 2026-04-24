@@ -254,6 +254,27 @@ app.post('/api/saveenv', authMiddleware, (req, res) => {
   }
 });
 
+// ── 面板狀態（公鑰等不在 config.json 的資料）────────────
+const STATE_PATH = path.join(__dirname, 'panel-state.json');
+
+app.get('/api/state', authMiddleware, (req, res) => {
+  try {
+    const data = fs.existsSync(STATE_PATH) ? JSON.parse(fs.readFileSync(STATE_PATH, 'utf8')) : {};
+    res.json(data);
+  } catch { res.json({}); }
+});
+
+app.post('/api/state', authMiddleware, (req, res) => {
+  try {
+    const current = fs.existsSync(STATE_PATH) ? JSON.parse(fs.readFileSync(STATE_PATH, 'utf8')) : {};
+    const merged = { ...current, ...req.body };
+    const tmp = STATE_PATH + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(merged, null, 2));
+    fs.renameSync(tmp, STATE_PATH);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── 前端路由 fallback ─────────────────────────────────
 app.get('*', (_, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 

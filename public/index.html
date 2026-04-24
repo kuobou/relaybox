@@ -924,9 +924,9 @@ async function genRealityKeypair(silent) {
   const privM = d.output.match(/PrivateKey:\s*(\S+)/);
   const pubM  = d.output.match(/PublicKey:\s*(\S+)/);
   if (privM) document.getElementById('cfg-privkey').value = privM[1];
-  if (pubM)  {
+  if (pubM) {
     document.getElementById('cfg-pubkey').value = pubM[1];
-    if (privM) localStorage.setItem('kx_pub_' + privM[1].slice(-8), pubM[1]);
+    api('POST', '/api/state', { reality_pubkey: pubM[1], reality_privkey: privM?.[1] });
   }
   if (!silent) toast('密鑰已生成');
 }
@@ -966,8 +966,8 @@ async function loadConfigIntoForm() {
       document.getElementById('cfg-sni').value = firstIn.tls.server_name || 'www.microsoft.com';
       const privkey = firstIn.tls.reality.private_key || '';
       document.getElementById('cfg-privkey').value = privkey;
-      const savedPub = privkey ? localStorage.getItem('kx_pub_' + privkey.slice(-8)) : null;
-      if (savedPub) document.getElementById('cfg-pubkey').value = savedPub;
+      const state = await api('GET', '/api/state');
+      if (state?.reality_pubkey) document.getElementById('cfg-pubkey').value = state.reality_pubkey;
     }
 
     document.getElementById('port-list').innerHTML = '';
