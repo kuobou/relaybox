@@ -521,7 +521,7 @@ function copyText(text, msg) {
   toast(msg);
 }
 
-function initDefaults() { addPort(); addExitPort(); genRealityKeypair(true); }
+function initDefaults() { addPort(); addExitPort(); }
 
 function switchRole(role) {
   currentRole = role;
@@ -531,8 +531,8 @@ function switchRole(role) {
   document.getElementById('block-exit').style.display = role === 'exit' ? 'block' : 'none';
   document.getElementById('vless-link-block').style.display = role === 'relay' ? 'block' : 'none';
   document.getElementById('cfg-output').value = '';
-  if (role === 'exit' && !document.getElementById('exit-server-ip').value) detectExitIP();
   if (role === 'exit' && !document.getElementById('exit-port-list').children.length) addExitPort();
+  if (role === 'exit' && !configFormLoaded && !document.getElementById('exit-server-ip').value) detectExitIP();
 }
 
 async function doLogin() {
@@ -1001,9 +1001,13 @@ async function loadConfigIntoForm() {
     });
   }
 
-  // 沒有私鑰（全新設定）→ 自動生成
   if (role === 'relay' && !document.getElementById('cfg-privkey').value) {
     await genRealityKeypair(true);
+    toast('已自動生成新 REALITY 密鑰對');
+  }
+
+  if (role === 'exit' && !document.getElementById('exit-server-ip').value) {
+    detectExitIP();
   }
 
   configFormLoaded = true;
