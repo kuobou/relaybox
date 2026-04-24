@@ -384,7 +384,7 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
               <div class="form-label">REALITY 私鑰</div>
               <div class="input-group">
                 <input class="form-input" id="cfg-privkey" placeholder="貼入 Private Key">
-                <button class="btn sm" onclick="genRealityKeypair()">本機生成</button>
+                <button class="btn sm" onclick="genRealityKeypair()">重新生成</button>
               </div>
             </div>
           </div>
@@ -521,7 +521,7 @@ function copyText(text, msg) {
   toast(msg);
 }
 
-function initDefaults() { addPort(); addExitPort(); }
+function initDefaults() { addPort(); addExitPort(); genRealityKeypair(true); }
 
 function switchRole(role) {
   currentRole = role;
@@ -912,15 +912,18 @@ function getPortsData() {
   })).filter(d => d.port >= 1 && d.port <= 65535);
 }
 
-async function genRealityKeypair() {
-  toast('生成中...');
+async function genRealityKeypair(silent) {
+  if (!silent) toast('生成中...');
   const d = await api('GET','/api/gen/reality-keypair');
-  if (!d||d.error) { toast(d&&d.error?d.error:'生成失敗，請確認 sing-box 已安裝','err'); return; }
+  if (!d||d.error) { if (!silent) toast(d&&d.error?d.error:'生成失敗，請確認 sing-box 已安裝','err'); return; }
   const privM = d.output.match(/PrivateKey:\s*(\S+)/);
-  const pubM = d.output.match(/PublicKey:\s*(\S+)/);
+  const pubM  = d.output.match(/PublicKey:\s*(\S+)/);
   if (privM) document.getElementById('cfg-privkey').value = privM[1];
-  if (pubM) document.getElementById('cfg-pubkey').value = pubM[1];
-  toast('密鑰已生成');
+  if (pubM)  {
+    document.getElementById('cfg-pubkey').value = pubM[1];
+    if (privM) localStorage.setItem('kx_pub_' + privM[1].slice(-8), pubM[1]);
+  }
+  if (!silent) toast('密鑰已生成');
 }
 
 
@@ -956,7 +959,10 @@ async function loadConfigIntoForm() {
 
     if (firstIn.tls?.reality) {
       document.getElementById('cfg-sni').value = firstIn.tls.server_name || 'www.microsoft.com';
-      document.getElementById('cfg-privkey').value = firstIn.tls.reality.private_key || '';
+      const privkey = firstIn.tls.reality.private_key || '';
+      document.getElementById('cfg-privkey').value = privkey;
+      const savedPub = privkey ? localStorage.getItem('kx_pub_' + privkey.slice(-8)) : null;
+      if (savedPub) document.getElementById('cfg-pubkey').value = savedPub;
     }
 
     document.getElementById('port-list').innerHTML = '';
@@ -993,6 +999,11 @@ async function loadConfigIntoForm() {
       card.querySelector('.ep-uuid').value = uuid;
       card.querySelector('.ep-uuid-hint').textContent = 'UUID: ' + uuid.slice(0,8) + '...';
     });
+  }
+
+  // 沒有私鑰（全新設定）→ 自動生成
+  if (role === 'relay' && !document.getElementById('cfg-privkey').value) {
+    await genRealityKeypair(true);
   }
 
   configFormLoaded = true;
