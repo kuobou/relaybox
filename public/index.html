@@ -782,13 +782,13 @@ function addPort(portNum) {
   document.getElementById('port-list').appendChild(makePortCard(portNum));
 }
 
-function buildPortLink(btn) {
+async function buildPortLink(btn) {
   const card = btn.closest('.port-card');
   const serverIP = document.getElementById('vless-server-ip').value.trim();
   if (!serverIP) { toast('請先在下方「v2rayN 連結」區塊填入公網 IP', 'err'); return; }
 
   const proto = document.getElementById('cfg-in-proto').value;
-  const pubkey = document.getElementById('cfg-pubkey').value;
+  let pubkey = document.getElementById('cfg-pubkey').value;
   const sni = document.getElementById('cfg-sni').value || 'www.microsoft.com';
   const port = +card.querySelector('.port-num').value;
   const uuid = card.querySelector('.pc-uuid').value;
@@ -797,10 +797,15 @@ function buildPortLink(btn) {
 
   if (!port) { toast('請先填入端口號', 'err'); return; }
 
+  if (proto === 'vless-reality' && !pubkey) {
+    await genRealityKeypair(true);
+    pubkey = document.getElementById('cfg-pubkey').value;
+    if (!pubkey) { toast('公鑰生成失敗，請確認 sing-box 已安裝', 'err'); return; }
+  }
+
   let link = '';
   const linkName = encodeURIComponent(baseName + '-' + port);
   if (proto === 'vless-reality') {
-    if (!pubkey) { toast('請先按「本機生成」取得 REALITY 公鑰', 'err'); return; }
     link = `vless://${uuid}@${serverIP}:${port}?security=reality&encryption=none&pbk=${encodeURIComponent(pubkey)}&fp=chrome&sid=${shortid}&sni=${sni}&flow=xtls-rprx-vision&type=tcp#${linkName}`;
   } else if (proto === 'trojan') {
     link = `trojan://${uuid}@${serverIP}:${port}?type=tcp#${linkName}`;
@@ -1028,7 +1033,7 @@ async function generateConfig() {
     if (!validPorts.length) { toast('請為至少一個端口設定落地機 IP 和端口', 'err'); return false; }
 
     if (proto === 'vless-reality' && !privkey) {
-      toast('請先在「REALITY 全域設定」點「本機生成」產生密鑰對', 'err');
+      toast('請先填入 REALITY 私鑰（或切換到設定生成頁面自動生成）', 'err');
       return false;
     }
 
@@ -1157,7 +1162,7 @@ async function detectIP() {
   }
 }
 
-function buildVlessLink() {
+async function buildVlessLink() {
   const serverIP = document.getElementById('vless-server-ip').value.trim();
   const baseName = document.getElementById('vless-link-name').value || 'kuoboX';
   const pubkey = document.getElementById('cfg-pubkey').value;
@@ -1165,7 +1170,11 @@ function buildVlessLink() {
   const proto = document.getElementById('cfg-in-proto').value;
 
   if (!serverIP) { toast('請填入公網 IP', 'err'); return; }
-  if (proto === 'vless-reality' && !pubkey) { toast('請先按「本機生成」取得 REALITY 公鑰', 'err'); return; }
+  if (proto === 'vless-reality' && !pubkey) {
+    await genRealityKeypair(true);
+    pubkey = document.getElementById('cfg-pubkey').value;
+    if (!pubkey) { toast('公鑰生成失敗，請確認 sing-box 已安裝', 'err'); return; }
+  }
 
   const portData = getPortsData();
   if (!portData.length) { toast('請先設定至少一個端口', 'err'); return; }
