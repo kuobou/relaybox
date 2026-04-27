@@ -24,10 +24,11 @@ if [ "$EUID" -ne 0 ]; then
   err "請使用 root 執行：sudo bash install.sh"
 fi
 
-# ── 檢查必要工具 ─────────────────────────────
-for cmd in curl tar unzip openssl; do
-  command -v $cmd &>/dev/null || err "缺少必要工具：$cmd，請先安裝後再執行"
-done
+# ── 更新套件並安裝必要工具 ───────────────────
+info "更新套件清單..."
+apt-get update -y
+info "安裝必要工具..."
+apt-get install -y curl tar unzip openssl
 
 # ── 收集設定 ─────────────────────────────────
 read -p "面板端口 [預設 3000]: " PANEL_PORT
