@@ -15,7 +15,7 @@ info() { echo -e "${BLUE}[~]${NC} $1"; }
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "        kuoboX 管理面板 一鍵安裝"
+echo "           kuobox 面板安裝"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
@@ -27,8 +27,8 @@ fi
 # ── 更新套件並安裝必要工具 ───────────────────
 info "更新套件清單..."
 apt-get update -y
-info "安裝必要工具..."
-apt-get install -y curl tar unzip openssl
+info "安裝 unzip..."
+apt-get install -y unzip
 
 # ── 收集設定 ─────────────────────────────────
 read -p "面板端口 [預設 3000]: " PANEL_PORT
